@@ -105,13 +105,16 @@ async def approval_gate(
     if name in READ_ONLY_TOOLS:
         return _allow("Read-only tool")
 
-    if (
-        name == "mcp__ops__issue_refund"
-        and args.get("amount_usd", 0) > REFUND_HARD_LIMIT_USD
-    ):
-        return _deny(
-            f"Refunds above ${REFUND_HARD_LIMIT_USD:.0f} must be handled manually"
-        )
+    if name == "mcp__ops__issue_refund":
+        amount = args.get("amount_usd")
+        if (
+            isinstance(amount, bool)
+            or not isinstance(amount, (int, float))
+            or not 0 < amount <= REFUND_HARD_LIMIT_USD
+        ):
+            return _deny(
+                f"Refund amount must be a positive number at most ${REFUND_HARD_LIMIT_USD:.0f}"
+            )
 
     if AUTO_APPROVE:
         return _allow("Auto-approved (--yes)")

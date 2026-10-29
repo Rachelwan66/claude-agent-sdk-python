@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from mcp.types import CallToolRequest, CallToolRequestParams, ListToolsRequest
 
 EXAMPLE = Path(__file__).parent.parent / "examples" / "one_person_company.py"
 
@@ -52,6 +53,24 @@ async def test_auto_approve_allows_side_effects(example):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
+    "amount", [None, -1, 0, float("nan"), float("inf"), "20", True]
+)
+async def test_invalid_refund_amount_is_denied(example, monkeypatch, amount):
+    example.AUTO_APPROVE = True
+    monkeypatch.setattr("builtins.input", lambda _: pytest.fail("should not prompt"))
+    result = await _gate(example, "mcp__ops__issue_refund", {"amount_usd": amount})
+    assert _decision(result) == "deny"
+
+
+@pytest.mark.asyncio
+async def test_refund_at_limit_is_allowed(example):
+    example.AUTO_APPROVE = True
+    result = await _gate(example, "mcp__ops__issue_refund", {"amount_usd": 100})
+    assert _decision(result) == "allow"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
     ("answer", "expected"),
     [("y", "allow"), ("YES", "allow"), ("n", "deny"), ("", "deny")],
 )
@@ -64,9 +83,39 @@ async def test_founder_prompt_decides(example, monkeypatch, answer, expected):
 
 @pytest.mark.asyncio
 async def test_ops_server_exposes_all_tools(example):
-    tool_names = {
-        t.name
-        for t in (example.sales_summary, example.send_email, example.issue_refund)
-    }
+    server = example.ops_server["instance"]
+    response = await server.request_handlers[ListToolsRequest](
+        ListToolsRequest(method="tools/list")
+    )
+    tool_names = {t.name for t in response.root.tools}
     assert tool_names == {"sales_summary", "send_email", "issue_refund"}
     assert example.ops_server["name"] == "ops"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("name", "arguments", "expected"),
+    [
+        ("sales_summary", {}, "42 orders"),
+        (
+            "send_email",
+            {"to": "test@example.com", "subject": "Test", "body": "Demo"},
+            "[demo] Email sent",
+        ),
+        (
+            "issue_refund",
+            {"order_id": "test-order", "amount_usd": 20},
+            "[demo] Refunded $20.00",
+        ),
+    ],
+)
+async def test_ops_tools_can_be_called_through_mcp(example, name, arguments, expected):
+    server = example.ops_server["instance"]
+    response = await server.request_handlers[CallToolRequest](
+        CallToolRequest(
+            method="tools/call",
+            params=CallToolRequestParams(name=name, arguments=arguments),
+        )
+    )
+    assert not response.root.isError
+    assert expected in response.root.content[0].text
