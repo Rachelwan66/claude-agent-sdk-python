@@ -260,9 +260,9 @@ class ClaudeSDKClient:
 
         Args:
             model: The model to use, or None to use default. Examples:
-                - 'claude-sonnet-4-5'
-                - 'claude-opus-4-1-20250805'
-                - 'claude-opus-4-20250514'
+                - 'claude-opus-5-5'
+                - 'claude-sonnet-5-5'
+                - 'claude-haiku-5-5'
 
         Example:
             ```python
@@ -271,7 +271,7 @@ class ClaudeSDKClient:
                 await client.query("Help me understand this problem")
 
                 # Switch to a different model for implementation
-                await client.set_model('claude-sonnet-4-5')
+                await client.set_model('claude-opus-5-5')
                 await client.query("Now implement the solution")
             ```
         """

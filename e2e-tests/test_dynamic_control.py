@@ -55,7 +55,7 @@ async def test_set_model():
             pass
 
         # Switch to Haiku model
-        await client.set_model("claude-3-5-haiku-20241022")
+        await client.set_model("claude-haiku-5-5")
 
         await client.query("What is 2+2? Just the number.")
 

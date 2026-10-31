@@ -29,11 +29,11 @@ async def main():
     # Enable partial message streaming
     options = ClaudeAgentOptions(
         include_partial_messages=True,
-        model="claude-sonnet-4-5",
+        model="claude-opus-5-5",
         max_turns=2,
-        env={
-            "MAX_THINKING_TOKENS": "8000",
-        },
+        # Claude Opus 5.5 always thinks (adaptive); a fixed thinking-token
+        # budget is not supported on this model.
+        thinking={"type": "adaptive"},
     )
 
     client = ClaudeSDKClient(options)

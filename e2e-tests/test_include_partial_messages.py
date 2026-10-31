@@ -27,11 +27,11 @@ async def test_include_partial_messages_stream_events():
 
     options = ClaudeAgentOptions(
         include_partial_messages=True,
-        model="claude-sonnet-4-5",
+        model="claude-opus-5-5",
         max_turns=2,
-        env={
-            "MAX_THINKING_TOKENS": "8000",
-        },
+        # Claude Opus 5.5 always thinks (adaptive); a fixed thinking-token
+        # budget is not supported on this model.
+        thinking={"type": "adaptive"},
     )
 
     collected_messages: list[Any] = []
@@ -95,11 +95,11 @@ async def test_include_partial_messages_thinking_deltas():
 
     options = ClaudeAgentOptions(
         include_partial_messages=True,
-        model="claude-sonnet-4-5",
+        model="claude-opus-5-5",
         max_turns=2,
-        env={
-            "MAX_THINKING_TOKENS": "8000",
-        },
+        # Claude Opus 5.5 always thinks (adaptive); a fixed thinking-token
+        # budget is not supported on this model.
+        thinking={"type": "adaptive"},
     )
 
     thinking_deltas = []
@@ -133,7 +133,7 @@ async def test_partial_messages_disabled_by_default():
 
     options = ClaudeAgentOptions(
         # include_partial_messages not set (defaults to False)
-        model="claude-sonnet-4-5",
+        model="claude-opus-5-5",
         max_turns=2,
     )
 
